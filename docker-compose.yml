@@ -1,0 +1,51 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:latest
+    container_name: django_base_book_db
+    restart: always
+    ports:
+      - "15432:5432"
+    environment: 
+      # DB名
+      POSTGRES_USER: 'book_management'
+      # DBパスワード
+      POSTGRES_PASSWORD: 'managedBook'
+    volumes:
+            - ./init_db:/docker-entrypoint-initdb.d
+  web:
+    container_name: django_base_book_web
+    build:
+      context: ./
+      dockerfile: ./web/Dockerfile
+    environment:
+      TZ: 'Asia/Tokyo'
+    ports:
+      - 8000:8000
+    volumes:
+      - ./web/logs/nginx/:/var/log/nginx/
+      - ./web/uwsgi_params:/etc/nginx/uwsgi_params
+      - ./back/static:/var/www/static/
+    depends_on:
+      - back
+  back:
+    container_name: django_base_book_back
+    build:
+      context: ./back
+      dockerfile: Dockerfile
+    command: 'sh /server/start.sh'
+    expose:
+      - "8001"
+    volumes: 
+      - ./back:/server/
+  front:
+    container_name: django_base_book_front
+    build:
+      context: ./front
+    command: 'sh /app/start.sh'
+    volumes: 
+      - ./front/vue-project:/app/:cached
+      - ./front/vue-project/node_modules:/app/node_modules
+    ports:
+      - "8080:8080"
+
